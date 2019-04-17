@@ -49,8 +49,9 @@ class CKEditor extends React.Component {
     let msgData;
     try {
       msgData = event.nativeEvent.data;
-      console.log('msgData', msgData);
-      this.props.onChange(msgData);
+      decodedData = decodeURIComponent(decodeURIComponent(msgData));
+      console.log('msgData', decodedData);
+      this.props.onChange(decodedData);
     } catch (err) {
       console.warn(err);
       return;
@@ -58,7 +59,6 @@ class CKEditor extends React.Component {
   };
 
   onWebViewLoaded = () => {
-    console.log('Webview loaded');
     this.setState({ webViewNotLoaded: false });
     this.postMessage(this.props.content);
   };
@@ -74,7 +74,7 @@ class CKEditor extends React.Component {
   };
 
   render() {
-    const { maxHeight } = this.props;
+    const { maxHeight, editorConfig } = this.props;
     return (
       <WebView
         ref={this.createWebViewRef}
@@ -110,13 +110,13 @@ class CKEditor extends React.Component {
         <textarea name="editor1" id="editor1"></textarea>
         <script>
         ClassicEditor
-            .create( document.querySelector( '#editor1' ) )
+            .create( document.querySelector( '#editor1' ), ${JSON.stringify(editorConfig || {})} )
             .then( editor => {
                 console.log( editor );
                 window.editor = editor;
                 editor.model.document.on('change:data', () => {
                   try {
-                    window.postMessage(editor.getData(), '*')
+                    window.postMessage(editor.getData())
                   }
                   catch (e) {
                     alert(e)
@@ -126,11 +126,6 @@ class CKEditor extends React.Component {
             .catch( error => {
                 console.error( error );
             } );
-          // CKEDITOR.replace('editor1', {
-          //   on: {
-          //     'instanceReady': function (evt) { evt.editor.execCommand('maximize'); }
-          //   }
-          // });
         </script>
         </body>
 
