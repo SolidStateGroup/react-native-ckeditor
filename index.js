@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View, WebView } from 'react-native';
 
-const webapp = require('./index.html');
+const ckeditor = require('./ckeditor');
 
 // fix https://github.com/facebook/react-native/issues/10865
 const patchPostMessageJsCode = `(${String(function() {
@@ -74,13 +74,69 @@ class CKEditor extends React.Component {
   };
 
   render() {
+    const { maxHeight } = this.props;
     return (
       <WebView
         ref={this.createWebViewRef}
         injectedJavaScript={patchPostMessageJsCode}
         style={{ marginTop: 20 }}
         scrollEnabled={false}
-        source={webapp}
+        source={{html: `
+        <!DOCTYPE html>
+        <html>
+
+        <head>
+            <meta charset="utf-8">
+            <title>CKEditor</title>
+            <script>
+              ${ckeditor}
+            </script>
+            <script>
+              document.addEventListener("message", function(data) {
+                console.log(data.data);
+                editor.setData(data.data);
+              });
+            </script>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+            .ck-editor__editable {
+              max-height: ${maxHeight || 100}px;
+          }
+            </style>
+        </head>
+
+        <body>
+        <textarea name="editor1" id="editor1"></textarea>
+        <script>
+        ClassicEditor
+            .create( document.querySelector( '#editor1' ) )
+            .then( editor => {
+                console.log( editor );
+                window.editor = editor;
+                editor.model.document.on('change:data', () => {
+                  try {
+                    window.postMessage(editor.getData(), '*')
+                  }
+                  catch (e) {
+                    alert(e)
+                  }
+                } );
+            } )
+            .catch( error => {
+                console.error( error );
+            } );
+          // CKEDITOR.replace('editor1', {
+          //   on: {
+          //     'instanceReady': function (evt) { evt.editor.execCommand('maximize'); }
+          //   }
+          // });
+        </script>
+        </body>
+
+        </html>
+
+        `}}
         scalesPageToFit={false}
         onError={this.onError}
         renderError={this.renderError}
